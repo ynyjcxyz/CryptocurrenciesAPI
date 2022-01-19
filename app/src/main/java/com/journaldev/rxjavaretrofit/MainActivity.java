@@ -12,7 +12,6 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.journaldev.rxjavaretrofit.pojo.Crypto;
 import com.journaldev.rxjavaretrofit.pojo.CryptoDataModel;
 import com.journaldev.rxjavaretrofit.pojo.ServerCoinModel;
 import io.reactivex.Observable;
@@ -62,9 +61,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void callEndpoints() {
-        String coinName = "btc";
         //Single call
-        coinStream(coinName)
+        Observable.merge(coinStream("btc"),coinStream("eth"))
             .observeOn(AndroidSchedulers.mainThread())
                 .as(autoDisposable(from(this)))
                 .subscribe(this::handleResults, this::handleError);
@@ -78,6 +76,9 @@ public class MainActivity extends AppCompatActivity {
             .subscribeOn(Schedulers.io());
     }
 
+
+    //CryptoDataModel -> eth
+    //CryptoDataModel -> btc
 
     private void handleResults(CryptoDataModel model) {
         recyclerViewAdapter.setData(model);
