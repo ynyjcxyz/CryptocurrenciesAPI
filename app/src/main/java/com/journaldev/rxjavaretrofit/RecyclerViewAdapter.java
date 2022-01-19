@@ -41,7 +41,7 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
         holder.txtCoin.setText(market.coinName);
         holder.txtMarket.setText(market.market);
         holder.txtPrice.setText("$" + String.format("%.2f", Double.parseDouble(market.price)));
-        if (market.coinName.equalsIgnoreCase("eth")) {
+        if ("eth".equalsIgnoreCase(market.coinName)) {
             holder.cardView.setCardBackgroundColor(Color.GRAY);
         } else {
             holder.cardView.setCardBackgroundColor(Color.GREEN);
