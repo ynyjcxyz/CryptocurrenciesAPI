@@ -13,7 +13,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.journaldev.rxjavaretrofit.pojo.Crypto;
-import com.journaldev.rxjavaretrofit.pojo.ResultModel;
+import com.journaldev.rxjavaretrofit.pojo.ServerCoinModel;
 import io.reactivex.Observable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.schedulers.Schedulers;
@@ -67,7 +67,7 @@ public class MainActivity extends AppCompatActivity {
         //Single call
         Observable<Crypto> cryptoObservable = cryptocurrencyService.getCoinData("btc");
         cryptoObservable
-                .map(dto -> new ResultModel(dto.timestamp,dto.ticker.markets))
+                .map(dto -> new ServerCoinModel(dto.timestamp,dto.ticker.markets))
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .as(autoDisposable(from(this)))
@@ -76,7 +76,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    private void handleResults(ResultModel markets) {
+    private void handleResults(ServerCoinModel markets) {
         recyclerViewAdapter.setData(markets.markets);
         time_stamp.setText(String.valueOf(markets.timestamp));
     }
