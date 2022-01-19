@@ -7,6 +7,7 @@ import static com.uber.autodispose.android.lifecycle.AndroidLifecycleScopeProvid
 import android.os.Bundle;
 import android.widget.TextView;
 import android.widget.Toast;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -18,10 +19,13 @@ import com.journaldev.rxjavaretrofit.pojo.ServerCoinModel;
 import com.journaldev.rxjavaretrofit.pojo.ZippedCryptoDataModel;
 import io.reactivex.Observable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
-import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
+import java.text.SimpleDateFormat;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
+import java.util.concurrent.TimeUnit;
 import okhttp3.OkHttpClient;
 import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Retrofit;
@@ -32,6 +36,9 @@ import retrofit2.converter.gson.GsonConverterFactory;
  * refresh the coin for btc and etc for every 3 seconds and update it in descending (biggest to smallest) volume order.
  */
 public class MainActivity extends AppCompatActivity {
+
+    private  static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat(
+        "yyyy-MM-dd HH:mm:ss", Locale.getDefault());
     TextView time_stamp;
     RecyclerView recyclerView;
     Retrofit retrofit;
@@ -70,13 +77,20 @@ public class MainActivity extends AppCompatActivity {
 
     private void callEndpoints() {
         //Single call
-        Observable.zip(coinStream("btc"), coinStream("eth"), this::zip)
+        Observable.interval(0,3, TimeUnit.SECONDS)
+            .switchMap(this::request)
             .observeOn(AndroidSchedulers.mainThread())
             .as(autoDisposable(from(this)))
             .subscribe(this::handleResults, this::handleError);
 
     }
 
+    private Observable<ZippedCryptoDataModel> request(Long count) {
+        System.out.printf("count:%s\n",count);
+        return Observable.zip(coinStream("btc"), coinStream("eth"), this::zip);
+    }
+
+    @NonNull
     private ZippedCryptoDataModel zip(CryptoDataModel btc, CryptoDataModel eth) {
 
         long latest =Math.max(btc.serverCoinModel.timestamp,eth.serverCoinModel.timestamp);
@@ -114,10 +128,24 @@ public class MainActivity extends AppCompatActivity {
     //CryptoDataModel -> btc
 
     private void handleResults(ZippedCryptoDataModel model) {
+        System.out.printf("count model:%s",model.timestamp);
         recyclerViewAdapter.setData(model);
-        time_stamp.setText(String.valueOf(model.timestamp));
+        time_stamp.setText(formatTime(model.timestamp));
     }
 
+    private String formatTime(long serverUpdatedTime) {
+         return String.format("server updated time:%s\nrefreshed time:%s,",
+            serverTime(serverUpdatedTime),
+            refreshedTime());
+    }
+
+    private String serverTime(long serverUpdatedTime) {
+        return SIMPLE_DATE_FORMAT.format(new Date(serverUpdatedTime * 1000));
+    }
+
+    private String refreshedTime( ) {
+        return SIMPLE_DATE_FORMAT.format(new Date());
+    }
 
     private void handleError(Throwable t) {
         Toast.makeText(this, "ERROR IN FETCHING API RESPONSE. Try again",
