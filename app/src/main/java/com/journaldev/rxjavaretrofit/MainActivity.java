@@ -1,39 +1,27 @@
 package com.journaldev.rxjavaretrofit;
 
-import static android.os.Build.ID;
-
-import androidx.appcompat.app.AppCompatActivity;
+import static com.journaldev.rxjavaretrofit.CryptocurrencyService.BASE_URL;
+import static com.uber.autodispose.AutoDispose.autoDisposable;
+import static com.uber.autodispose.android.lifecycle.AndroidLifecycleScopeProvider.from;
 
 import android.os.Bundle;
-
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-
 import android.widget.TextView;
 import android.widget.Toast;
-
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.journaldev.rxjavaretrofit.pojo.Crypto;
-import com.ryanharter.auto.value.gson.GenerateTypeAdapter;
-
-import java.util.Collections;
-import java.util.List;
-
+import com.journaldev.rxjavaretrofit.pojo.ResultModel;
 import io.reactivex.Observable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.schedulers.Schedulers;
-import okhttp3.Interceptor;
 import okhttp3.OkHttpClient;
 import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Retrofit;
 import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory;
 import retrofit2.converter.gson.GsonConverterFactory;
-
-import static com.journaldev.rxjavaretrofit.CryptocurrencyService.BASE_URL;
-import static com.uber.autodispose.AutoDispose.autoDisposable;
-import static com.uber.autodispose.android.lifecycle.AndroidLifecycleScopeProvider.from;
-import static io.reactivex.internal.operators.single.SingleInternalHelper.toObservable;
 
 public class MainActivity extends AppCompatActivity {
     TextView time_stamp;
@@ -79,28 +67,18 @@ public class MainActivity extends AppCompatActivity {
         //Single call
         Observable<Crypto> cryptoObservable = cryptocurrencyService.getCoinData("btc");
         cryptoObservable
+                .map(dto -> new ResultModel(dto.timestamp,dto.ticker.markets))
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
-                .map(result -> Observable.fromIterable(result.ticker.markets))
-                .flatMap(x -> x)
-                .filter(y -> {
-                    y.coinName = "btc";
-                    return true;
-                })
-                .toList()
-                .toObservable()
                 .as(autoDisposable(from(this)))
                 .subscribe(this::handleResults, this::handleError);
 
     }
 
 
-    private void handleResults(List<Crypto.Market> markets) {
-        if (markets != null && markets.size() != 0) {
-            recyclerViewAdapter.setData(markets);
-        } else {
-            Toast.makeText(this, "NO RESULTS FOUND", Toast.LENGTH_LONG).show();
-        }
+    private void handleResults(ResultModel markets) {
+        recyclerViewAdapter.setData(markets.markets);
+        time_stamp.setText(String.valueOf(markets.timestamp));
     }
 
 
