@@ -13,6 +13,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.journaldev.rxjavaretrofit.pojo.Crypto;
+import com.journaldev.rxjavaretrofit.pojo.CryptoDataModel;
 import com.journaldev.rxjavaretrofit.pojo.ServerCoinModel;
 import io.reactivex.Observable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
@@ -61,24 +62,26 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void callEndpoints() {
-
-        CryptocurrencyService cryptocurrencyService = retrofit.create(CryptocurrencyService.class);
-
+        String coinName = "btc";
         //Single call
-        Observable<Crypto> cryptoObservable = cryptocurrencyService.getCoinData("btc");
-        cryptoObservable
-                .map(dto -> new ServerCoinModel(dto.timestamp,dto.ticker.markets))
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
+        coinStream(coinName)
+            .observeOn(AndroidSchedulers.mainThread())
                 .as(autoDisposable(from(this)))
                 .subscribe(this::handleResults, this::handleError);
 
     }
 
+    private Observable<CryptoDataModel> coinStream(String coinName) {
+        return retrofit.create(CryptocurrencyService.class).getCoinData(coinName)
+            .map(dto -> new ServerCoinModel(dto.timestamp, dto.ticker.markets))
+            .map(serverModel -> new CryptoDataModel(coinName, serverModel))
+            .subscribeOn(Schedulers.io());
+    }
 
-    private void handleResults(ServerCoinModel markets) {
-        recyclerViewAdapter.setData(markets.markets);
-        time_stamp.setText(String.valueOf(markets.timestamp));
+
+    private void handleResults(CryptoDataModel model) {
+        recyclerViewAdapter.setData(model);
+        time_stamp.setText(String.valueOf(model.serverCoinModel.timestamp));
     }
 
 
