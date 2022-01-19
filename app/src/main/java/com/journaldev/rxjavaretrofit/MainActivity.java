@@ -92,32 +92,6 @@ public class MainActivity extends AppCompatActivity {
                 .as(autoDisposable(from(this)))
                 .subscribe(this::handleResults, this::handleError);
 
-/*        Observable<List<Crypto.Market>> btcObservable =
-                cryptocurrencyService.getCoinData("btc")
-                .map(result -> Observable.fromIterable(result.ticker.markets))
-                .flatMap(x -> x)
-                        .filter(y -> {
-                            y.coinName = "btc";
-                            return true;
-                        })
-                        .toList()
-                        .toObservable();
-
-        Observable<List<Crypto.Market>> ethObservable =
-                cryptocurrencyService.getCoinData("eth")
-                .map(result -> Observable.fromIterable(result.ticker.markets))
-                .flatMap(x -> x)
-                        .filter(y -> {
-                            y.coinName = "eth";
-                            return true;
-                        })
-                        .toList()
-                        .toObservable();
-
-        Observable.merge(btcObservable, ethObservable)
-                .subscribeOn(Schedulers.computation())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(this::handleResults, this::handleError);*/
     }
 
 
@@ -129,15 +103,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-/*    private void handleResults(List<Crypto.Market> marketList) {
-        if (marketList != null && marketList.size() != 0) {
-            recyclerViewAdapter.setData(marketList);
-
-        } else {
-            Toast.makeText(this, "NO RESULTS FOUND",
-                    Toast.LENGTH_LONG).show();
-        }
-    }*/
 
     private void handleError(Throwable t) {
         Toast.makeText(this, "ERROR IN FETCHING API RESPONSE. Try again",
