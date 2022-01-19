@@ -1,41 +1,44 @@
 package com.journaldev.rxjavaretrofit;
 
-import static android.os.Build.ID;
-
-import androidx.appcompat.app.AppCompatActivity;
+import static com.journaldev.rxjavaretrofit.CryptocurrencyService.BASE_URL;
+import static com.uber.autodispose.AutoDispose.autoDisposable;
+import static com.uber.autodispose.android.lifecycle.AndroidLifecycleScopeProvider.from;
 
 import android.os.Bundle;
-
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-
 import android.widget.TextView;
 import android.widget.Toast;
-
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.journaldev.rxjavaretrofit.pojo.Crypto;
-import com.ryanharter.auto.value.gson.GenerateTypeAdapter;
-
-import java.util.Collections;
-import java.util.List;
-
+import com.journaldev.rxjavaretrofit.pojo.CoinMarket;
+import com.journaldev.rxjavaretrofit.pojo.CryptoDataModel;
+import com.journaldev.rxjavaretrofit.pojo.ServerCoinModel;
+import com.journaldev.rxjavaretrofit.pojo.ZippedCryptoDataModel;
 import io.reactivex.Observable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.schedulers.Schedulers;
-import okhttp3.Interceptor;
+import java.text.SimpleDateFormat;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
+import java.util.concurrent.TimeUnit;
 import okhttp3.OkHttpClient;
 import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Retrofit;
 import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory;
 import retrofit2.converter.gson.GsonConverterFactory;
 
-import static com.journaldev.rxjavaretrofit.CryptocurrencyService.BASE_URL;
-import static com.uber.autodispose.AutoDispose.autoDisposable;
-import static com.uber.autodispose.android.lifecycle.AndroidLifecycleScopeProvider.from;
-import static io.reactivex.internal.operators.single.SingleInternalHelper.toObservable;
-
+/**
+ * refresh the coin for btc and etc for every 3 seconds and update it in descending (biggest to smallest) volume order.
+ */
 public class MainActivity extends AppCompatActivity {
+
+    private  static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat(
+        "yyyy-MM-dd HH:mm:ss", Locale.getDefault());
     TextView time_stamp;
     RecyclerView recyclerView;
     Retrofit retrofit;
@@ -73,71 +76,76 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void callEndpoints() {
-
-        CryptocurrencyService cryptocurrencyService = retrofit.create(CryptocurrencyService.class);
-
         //Single call
-        Observable<Crypto> cryptoObservable = cryptocurrencyService.getCoinData("btc");
-        cryptoObservable
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .map(result -> Observable.fromIterable(result.ticker.markets))
-                .flatMap(x -> x)
-                .filter(y -> {
-                    y.coinName = "btc";
-                    return true;
-                })
-                .toList()
-                .toObservable()
-                .as(autoDisposable(from(this)))
-                .subscribe(this::handleResults, this::handleError);
+        Observable.interval(0,3, TimeUnit.SECONDS)
+            .switchMap(this::request)
+            .observeOn(AndroidSchedulers.mainThread())
+            .as(autoDisposable(from(this)))
+            .subscribe(this::handleResults, this::handleError);
 
-/*        Observable<List<Crypto.Market>> btcObservable =
-                cryptocurrencyService.getCoinData("btc")
-                .map(result -> Observable.fromIterable(result.ticker.markets))
-                .flatMap(x -> x)
-                        .filter(y -> {
-                            y.coinName = "btc";
-                            return true;
-                        })
-                        .toList()
-                        .toObservable();
+    }
 
-        Observable<List<Crypto.Market>> ethObservable =
-                cryptocurrencyService.getCoinData("eth")
-                .map(result -> Observable.fromIterable(result.ticker.markets))
-                .flatMap(x -> x)
-                        .filter(y -> {
-                            y.coinName = "eth";
-                            return true;
-                        })
-                        .toList()
-                        .toObservable();
+    private Observable<ZippedCryptoDataModel> request(Long count) {
+        System.out.printf("count:%s\n",count);
+        return Observable.zip(coinStream("btc"), coinStream("eth"), this::zip);
+    }
 
-        Observable.merge(btcObservable, ethObservable)
-                .subscribeOn(Schedulers.computation())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(this::handleResults, this::handleError);*/
+    @NonNull
+    private ZippedCryptoDataModel zip(CryptoDataModel btc, CryptoDataModel eth) {
+
+        long latest =Math.max(btc.serverCoinModel.timestamp,eth.serverCoinModel.timestamp);
+        List<CoinMarket> coinMarkets = mergeAndSort(btc, eth);
+        return new ZippedCryptoDataModel(latest,coinMarkets);
+
+    }
+
+    private List<CoinMarket> mergeAndSort(CryptoDataModel btc, CryptoDataModel eth) {
+        Observable<CoinMarket> btcStream = coinMarketStream(btc);
+        Observable<CoinMarket> ethStream = coinMarketStream(eth);
+        return Observable.merge(btcStream, ethStream)
+            .sorted(new Comparator<CoinMarket>() {
+                @Override
+                public int compare(CoinMarket o1, CoinMarket o2) {
+                    return Float.compare(o2.market.volume, o1.market.volume);
+                }
+            }).toList().blockingGet();
+    }
+
+    private Observable<CoinMarket> coinMarketStream(CryptoDataModel btc) {
+        return Observable.fromIterable(btc.serverCoinModel.markets)
+            .map(market -> new CoinMarket(btc.coinName, market));
+    }
+
+    private Observable<CryptoDataModel> coinStream(String coinName) {
+        return retrofit.create(CryptocurrencyService.class).getCoinData(coinName)
+            .map(dto -> new ServerCoinModel(dto.timestamp, dto.ticker.markets))
+            .map(serverModel -> new CryptoDataModel(coinName, serverModel))
+            .subscribeOn(Schedulers.io());
     }
 
 
-    private void handleResults(List<Crypto.Market> markets) {
-        if (markets != null && markets.size() != 0) {
-            recyclerViewAdapter.setData(markets);
-        } else {
-            Toast.makeText(this, "NO RESULTS FOUND", Toast.LENGTH_LONG).show();
-        }
+    //CryptoDataModel -> eth
+    //CryptoDataModel -> btc
+
+    private void handleResults(ZippedCryptoDataModel model) {
+        System.out.printf("count model:%s",model.timestamp);
+        recyclerViewAdapter.setData(model);
+        time_stamp.setText(formatTime(model.timestamp));
     }
 
-/*    private void handleResults(List<Crypto.Market> marketList) {
-        if (marketList != null && marketList.size() != 0) {
-            recyclerViewAdapter.setData(marketList);
+    private String formatTime(long serverUpdatedTime) {
+         return String.format("server updated time:%s\nrefreshed time:%s,",
+            serverTime(serverUpdatedTime),
+            refreshedTime());
+    }
 
-        } else {
-            Toast.makeText(this, "NO RESULTS FOUND",
-                    Toast.LENGTH_LONG).show();
-        }
-    }*/
+    private String serverTime(long serverUpdatedTime) {
+        return SIMPLE_DATE_FORMAT.format(new Date(serverUpdatedTime * 1000));
+    }
+
+    private String refreshedTime( ) {
+        return SIMPLE_DATE_FORMAT.format(new Date());
+    }
 
     private void handleError(Throwable t) {
         Toast.makeText(this, "ERROR IN FETCHING API RESPONSE. Try again",

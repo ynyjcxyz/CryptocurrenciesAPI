@@ -23,9 +23,6 @@ public class Crypto {
         public String price;
         @SerializedName("volume")
         public Float volume;
-
-        public String coinName;
-
     }
 
     public class Ticker {
