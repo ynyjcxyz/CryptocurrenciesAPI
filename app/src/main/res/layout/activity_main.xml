@@ -21,7 +21,8 @@
                 android:layout_height="match_parent"
                 android:layout_weight="1"
                 android:gravity="start|center_vertical"
-                android:text="Update Time" />
+                android:text="Update Time"
+                android:visibility="gone" />
 
             <TextView
                 android:id="@+id/time_stamp"
@@ -34,7 +35,8 @@
             <Button
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
-                android:layout_weight="1" />
+                android:layout_weight="1"
+                android:visibility="gone" />
 
         </LinearLayout>
 
