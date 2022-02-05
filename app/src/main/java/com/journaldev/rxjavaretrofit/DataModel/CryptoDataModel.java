@@ -1,4 +1,4 @@
-package com.journaldev.rxjavaretrofit.pojo;
+package com.journaldev.rxjavaretrofit.DataModel;
 
 public class CryptoDataModel {
     public final String coinName;

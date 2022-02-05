@@ -1,4 +1,4 @@
-package com.journaldev.rxjavaretrofit.pojo;
+package com.journaldev.rxjavaretrofit.DataModel;
 
 import java.util.List;
 

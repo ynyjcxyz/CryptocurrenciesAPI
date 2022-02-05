@@ -12,15 +12,14 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import com.journaldev.rxjavaretrofit.pojo.CoinMarket;
-import com.journaldev.rxjavaretrofit.pojo.Crypto;
-import com.journaldev.rxjavaretrofit.pojo.CryptoDataModel;
-import com.journaldev.rxjavaretrofit.pojo.ZippedCryptoDataModel;
+import com.journaldev.rxjavaretrofit.DataModel.CoinMarket;
+import com.journaldev.rxjavaretrofit.DataModel.ZippedCryptoDataModel;
 
 public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapter.ViewHolder> {
     private ZippedCryptoDataModel model = null;
 
-    public RecyclerViewAdapter() { }
+    public RecyclerViewAdapter() {
+    }
 
     @NonNull
     @Override
@@ -40,11 +39,11 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
         CoinMarket coinMarket = model.coinMarkets.get(position);
         holder.txtCoin.setText(coinMarket.coinName);
         holder.txtMarket.setText(coinMarket.market.market);
-        holder.txtPrice.setText("$" + String.format("%.10f",Double.parseDouble(coinMarket.market.price)));
-        holder.txtVolume.setText("$" + String.format("%.10f",coinMarket.market.volume));
-        if("eth".equalsIgnoreCase(coinMarket.coinName)){
+        holder.txtPrice.setText("$" + String.format("%.10f", Double.parseDouble(coinMarket.market.price)));
+        holder.txtVolume.setText("$" + String.format("%.10f", coinMarket.market.volume));
+        if ("eth".equalsIgnoreCase(coinMarket.coinName)) {
             holder.cardView.setCardBackgroundColor(Color.GRAY);
-        } else{
+        } else {
             holder.cardView.setCardBackgroundColor(Color.GREEN);
         }
     }
@@ -61,7 +60,6 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
-
         public TextView txtCoin;
         public TextView txtMarket;
         public TextView txtPrice;

@@ -1,5 +1,6 @@
 package com.journaldev.rxjavaretrofit;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.annotation.SuppressLint;
@@ -13,10 +14,10 @@ import android.widget.Toast;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.journaldev.rxjavaretrofit.pojo.CoinMarket;
-import com.journaldev.rxjavaretrofit.pojo.CryptoDataModel;
-import com.journaldev.rxjavaretrofit.pojo.ServerCoinModel;
-import com.journaldev.rxjavaretrofit.pojo.ZippedCryptoDataModel;
+import com.journaldev.rxjavaretrofit.DataModel.CoinMarket;
+import com.journaldev.rxjavaretrofit.DataModel.CryptoDataModel;
+import com.journaldev.rxjavaretrofit.DataModel.ServerCoinModel;
+import com.journaldev.rxjavaretrofit.DataModel.ZippedCryptoDataModel;
 
 import io.reactivex.Observable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
@@ -62,7 +63,6 @@ public class MainActivity extends AppCompatActivity {
         recyclerViewAdapter = new RecyclerViewAdapter();
         recyclerView.setAdapter(recyclerViewAdapter);
 
-
         HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
         interceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
         OkHttpClient client = new OkHttpClient.Builder().addInterceptor(interceptor).build();
@@ -82,7 +82,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void callEndpoints() {
-        Observable.interval(0, 3, TimeUnit.SECONDS)
+        Observable.interval(0, 120, TimeUnit.SECONDS)
                 .switchMap(this::request)
                 .observeOn(AndroidSchedulers.mainThread())
                 .as(autoDisposable(from(this)))
@@ -94,6 +94,7 @@ public class MainActivity extends AppCompatActivity {
         return Observable.zip(coinStream("btc"), coinStream("eth"), this::zip);
     }
 
+    @NonNull
     private ZippedCryptoDataModel zip(CryptoDataModel btc, CryptoDataModel eth) {
         long latest = Math.max(btc.serverCoinModel.timestamp, eth.serverCoinModel.timestamp);
         List<CoinMarket> coinMarkets = mergeAndSort(btc, eth);
@@ -144,7 +145,7 @@ fromIterable(Iterable<? extends T> source) 接受一个集合参数，创建 Obs
     //CryptoDataModel -> btc
 
     private void handleResults(ZippedCryptoDataModel model) {
-        System.out.printf("count model:%s", model.timestamp+"\n");
+        System.out.printf("count model:%s", model.timestamp + "\n");
         recyclerViewAdapter.setData(model);
         time_stamp.setText(formatTime(model.timestamp));
     }
