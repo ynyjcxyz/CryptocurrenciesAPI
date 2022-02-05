@@ -1,5 +1,6 @@
 package com.journaldev.rxjavaretrofit.DataModel;
 
+import com.journaldev.rxjavaretrofit.DataModel.CoinMarket;
 import java.util.List;
 
 public class ZippedCryptoDataModel {
