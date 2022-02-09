@@ -5,7 +5,7 @@ import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory;
 import retrofit2.converter.gson.GsonConverterFactory;
 
 public class RetrofitUtil {
-    static final String BASE_URL = "https://api.cryptonator.com/api/full/";
+    static final String BASE_URL = "https://run.mocky.io/v3/";
 
     static Retrofit buildRetrofit(){
         return new Retrofit.Builder()
